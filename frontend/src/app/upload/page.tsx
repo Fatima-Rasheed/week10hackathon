@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Upload, FileText, X, CheckCircle2, AlertCircle,
@@ -24,7 +24,7 @@ const STEPS = [
   { n: 3, label: 'View Results', done: false, active: false },
 ];
 
-export default function UploadPage() {
+function UploadPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const assignmentId = searchParams.get('id');
@@ -398,5 +398,13 @@ export default function UploadPage() {
         </button>
       </div>
     </>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={null}>
+      <UploadPage />
+    </Suspense>
   );
 }

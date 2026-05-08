@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { authAxios } from '@/lib/authAxios';
 import {
@@ -61,7 +61,7 @@ function getScoreColor(score: number, total: number, passing: number) {
   return 'var(--danger)';
 }
 
-export default function ResultsPage() {
+function ResultsPage() {
   const searchParams = useSearchParams();
   const assignmentId = searchParams.get('id');
 
@@ -137,10 +137,10 @@ export default function ResultsPage() {
   }
 
   const stats = [
-    { icon: Users,     label: 'Total Students', value: submissions.length, color: '#2e90fa', bg: 'rgba(46,144,250,.1)' },
-    { icon: TrendingUp,label: 'Average Score',  value: avg,                color: '#f79009', bg: 'rgba(247,144,9,.1)' },
-    { icon: Award,     label: 'Highest Score',  value: highest,            color: '#10b981', bg: 'rgba(16,185,129,.1)' },
-    { icon: BarChart3, label: 'Pass Rate',       value: `${passRate}%`,    color: '#7f56d9', bg: 'rgba(127,86,217,.1)' },
+    { icon: Users,      label: 'Total Students', value: submissions.length, color: '#2e90fa', bg: 'rgba(46,144,250,.1)' },
+    { icon: TrendingUp, label: 'Average Score',  value: avg,                color: '#f79009', bg: 'rgba(247,144,9,.1)' },
+    { icon: Award,      label: 'Highest Score',  value: highest,            color: '#10b981', bg: 'rgba(16,185,129,.1)' },
+    { icon: BarChart3,  label: 'Pass Rate',      value: `${passRate}%`,     color: '#7f56d9', bg: 'rgba(127,86,217,.1)' },
   ];
 
   return (
@@ -425,5 +425,13 @@ export default function ResultsPage() {
         )}
       </div>
     </>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={null}>
+      <ResultsPage />
+    </Suspense>
   );
 }

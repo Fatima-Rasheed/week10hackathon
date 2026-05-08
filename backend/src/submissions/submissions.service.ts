@@ -4,7 +4,8 @@ import { Model, Types } from 'mongoose';
 import { Submission, SubmissionDocument } from './submission.schema';
 import { AiService } from '../ai/ai.service';
 import { AssignmentsService } from '../assignments/assignments.service';
-import * as pdfParse from 'pdf-parse';
+
+const pdfParse = require('pdf-parse/lib/pdf-parse.js');
 
 @Injectable()
 export class SubmissionsService {
@@ -15,16 +16,12 @@ export class SubmissionsService {
     private assignmentsService: AssignmentsService,
   ) {}
 
-  // Extract student name & roll number from PDF text
-  // Convention: First line = Student Name, Second line = Roll Number
   private extractStudentInfo(text: string, fileName: string): { name: string; roll: string } {
     const lines = text.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
 
-    // Try to extract from text (first two meaningful lines)
     const nameLine = lines[0] || '';
     const rollLine = lines[1] || '';
 
-    // Check if lines look like name/roll (basic heuristic)
     const nameMatch = nameLine.match(/(?:name\s*[:=]?\s*)(.+)/i);
     const rollMatch = rollLine.match(/(?:roll\s*(?:no|number)?\s*[:=]?\s*)(.+)/i);
 
@@ -34,19 +31,28 @@ export class SubmissionsService {
     return { name, roll };
   }
 
-  // Count words in text
   private countWords(text: string): number {
     return text.trim().split(/\s+/).filter((w) => w.length > 0).length;
   }
 
-  // Process a single PDF file
   async processPdf(
     file: Express.Multer.File,
     assignmentId: string,
   ): Promise<SubmissionDocument> {
     // 1. Parse PDF to extract text
-    const pdfData = await pdfParse(file.buffer);
-    const extractedText = pdfData.text;
+    let extractedText = '';
+    try {
+      const pdfData = await pdfParse(file.buffer);
+      extractedText = pdfData.text;
+      console.log(`Extracted ${extractedText.length} chars from ${file.originalname}`);
+    } catch (err) {
+      console.error('PDF parse failed:', err.message);
+      throw new Error(`Could not extract text from ${file.originalname}. Make sure it is a text-based PDF, not a scanned image.`);
+    }
+
+    if (!extractedText || extractedText.trim().length === 0) {
+      throw new Error(`No text found in ${file.originalname}. Make sure it is a text-based PDF, not a scanned image.`);
+    }
 
     // 2. Extract student info from text
     const { name, roll } = this.extractStudentInfo(extractedText, file.originalname);
@@ -70,7 +76,7 @@ export class SubmissionsService {
       wordCount,
     });
 
-    // 6. Save submission to MongoDB (upsert to prevent duplicates)
+    // 6. Save submission to MongoDB
     const submissionData = {
       assignmentId: new Types.ObjectId(assignmentId),
       studentName: name,
@@ -84,7 +90,6 @@ export class SubmissionsService {
       originalFileName: file.originalname,
     };
 
-    // Match on assignmentId + originalFileName to avoid duplicates on re-upload
     const submission = await this.submissionModel.findOneAndUpdate(
       {
         assignmentId: new Types.ObjectId(assignmentId),
@@ -97,7 +102,6 @@ export class SubmissionsService {
     return submission;
   }
 
-  // Process multiple PDFs in batch
   async processBatch(
     files: Express.Multer.File[],
     assignmentId: string,
@@ -105,7 +109,6 @@ export class SubmissionsService {
     const success: SubmissionDocument[] = [];
     const errors: any[] = [];
 
-    // Process each PDF sequentially (to avoid API rate limits)
     for (const file of files) {
       try {
         const result = await this.processPdf(file, assignmentId);
@@ -113,7 +116,7 @@ export class SubmissionsService {
       } catch (err) {
         errors.push({
           fileName: file.originalname,
-          error: err.message,
+          error: err instanceof Error ? err.message : String(err),
         });
       }
     }
@@ -121,7 +124,6 @@ export class SubmissionsService {
     return { success, errors };
   }
 
-  // Get all submissions for an assignment
   async findByAssignment(assignmentId: string): Promise<SubmissionDocument[]> {
     return this.submissionModel
       .find({ assignmentId: new Types.ObjectId(assignmentId) })
@@ -129,7 +131,6 @@ export class SubmissionsService {
       .exec();
   }
 
-  // Get single submission
   async findOne(id: string): Promise<SubmissionDocument> {
     const submission = await this.submissionModel.findById(id).exec();
     if (!submission) {
@@ -138,7 +139,6 @@ export class SubmissionsService {
     return submission;
   }
 
-  // Delete a single submission by id
   async deleteOne(id: string): Promise<void> {
     const result = await this.submissionModel.findByIdAndDelete(id).exec();
     if (!result) {
@@ -146,7 +146,6 @@ export class SubmissionsService {
     }
   }
 
-  // Delete all submissions for an assignment
   async deleteByAssignment(assignmentId: string): Promise<void> {
     await this.submissionModel
       .deleteMany({ assignmentId: new Types.ObjectId(assignmentId) })

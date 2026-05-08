@@ -7,7 +7,7 @@ import { authAxios } from '../lib/authAxios'; // adjust path as needed
 
 import {
   LayoutDashboard, PlusCircle, GraduationCap,
-  BookOpen, HelpCircle, Sun, Moon, Clock, Sparkles, X, LogOut,
+  BookOpen, Sun, Moon, Clock, Sparkles, X, LogOut,
 } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 
@@ -224,28 +224,8 @@ useEffect(() => {
           )}
         </nav>
 
-        {/* Bottom */}
+        Bottom
         <div style={{ padding: '10px', borderTop: '1px solid var(--sb-border)' }}>
-          {/* Help */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 9,
-            padding: '7px 10px', borderRadius: 7,
-            color: 'var(--sb-text)', fontSize: 13, cursor: 'pointer',
-            transition: 'all .12s', marginBottom: 2,
-          }}
-          onMouseEnter={e => {
-            (e.currentTarget as HTMLElement).style.background = 'var(--sb-hover)';
-            (e.currentTarget as HTMLElement).style.color = 'var(--sb-text-hi)';
-          }}
-          onMouseLeave={e => {
-            (e.currentTarget as HTMLElement).style.background = 'transparent';
-            (e.currentTarget as HTMLElement).style.color = 'var(--sb-text)';
-          }}
-          >
-            <HelpCircle size={14} strokeWidth={1.8} />
-            Help
-          </div>
-
           {/* Theme toggle */}
           <button onClick={toggle} style={{
             display: 'flex', alignItems: 'center', gap: 9,
